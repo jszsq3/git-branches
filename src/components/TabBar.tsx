@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { LOCALES, setLocale, t, useLocale } from "../lib/i18n";
 import type { RepoSummary } from "../state/repo-context";
@@ -49,10 +49,29 @@ export function TabBar({
   const locale = useLocale();
   const [dragging, setDragging] = useState<number | null>(null);
   const labels = tabLabels(tabs);
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  // 标签条只能横向滚动且隐藏了滚动条：鼠标滚轮的上下滚动转成左右滚动（React 的 onWheel 是被动监听，无法阻止默认行为）
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      strip.scrollLeft += e.deltaY;
+    };
+    strip.addEventListener("wheel", onWheel, { passive: false });
+    return () => strip.removeEventListener("wheel", onWheel);
+  }, []);
+
+  // 切换或新开的标签在可视区外时滚动到可见
+  useEffect(() => {
+    stripRef.current?.querySelector(".ws-tab.active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [active, tabs.length]);
 
   return (
     <div className="tabbar" data-tauri-drag-region>
-      <div className="tab-strip" data-tauri-drag-region>
+      <div className="tab-strip" ref={stripRef} data-tauri-drag-region>
         {tabs.map((root, i) => {
           const s = summaries[root];
           return (
