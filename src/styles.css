@@ -537,9 +537,17 @@ textarea {
   font-size: 12px;
 }
 .track {
-  color: var(--accent);
+  display: inline-flex;
+  gap: 4px;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+}
+/* 与 IDEA 一致：领先（待推送）绿色，落后（待拉取）蓝色 */
+.track .ahead {
+  color: var(--success);
+}
+.track .behind {
+  color: var(--accent);
 }
 .track.gone {
   color: var(--danger);

@@ -137,8 +137,8 @@ export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string
           <span>{head.branch || t("游离 {sha}", { sha: head.sha.slice(0, 8) })}</span>
           {headRef && (headRef.ahead > 0 || headRef.behind > 0) && (
             <span className="track">
-              {headRef.ahead ? `↑${headRef.ahead}` : ""}
-              {headRef.behind ? ` ↓${headRef.behind}` : ""}
+              {headRef.ahead > 0 && <span className="ahead">↑{headRef.ahead}</span>}
+              {headRef.behind > 0 && <span className="behind">↓{headRef.behind}</span>}
             </span>
           )}
           <span className="caret">▾</span>

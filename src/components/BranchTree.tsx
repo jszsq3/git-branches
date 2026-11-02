@@ -123,7 +123,14 @@ export function BranchTree({
                   })
             }
           >
-            {r.isGone ? t("上游已删") : `${r.ahead ? `↑${r.ahead}` : ""}${r.behind ? ` ↓${r.behind}` : ""}`.trim()}
+            {r.isGone ? (
+              t("上游已删")
+            ) : (
+              <>
+                {r.ahead > 0 && <span className="ahead">↑{r.ahead}</span>}
+                {r.behind > 0 && <span className="behind">↓{r.behind}</span>}
+              </>
+            )}
           </span>
         )}
       </div>
