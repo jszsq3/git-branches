@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { LOCALES, setLocale, t, useLocale } from "../lib/i18n";
 import type { RepoSummary } from "../state/repo-context";
 import { useDialogs } from "../state/dialogs";
 import { IconPlus } from "./icons";
@@ -36,6 +37,7 @@ export function TabBar({
   onAdd: () => void;
 }) {
   const dialogs = useDialogs();
+  const locale = useLocale();
   const [dragging, setDragging] = useState<number | null>(null);
   const labels = tabLabels(tabs);
 
@@ -66,26 +68,26 @@ export function TabBar({
               onClick={() => onActivate(root)}
               onContextMenu={e =>
                 dialogs.menu(e, [
-                  { label: "关闭", onSelect: () => onClose(root) },
-                  { label: "关闭其他工作区", onSelect: () => onCloseOthers(root), isDisabled: tabs.length < 2 },
+                  { label: t("关闭"), onSelect: () => onClose(root) },
+                  { label: t("关闭其他工作区"), onSelect: () => onCloseOthers(root), isDisabled: tabs.length < 2 },
                   "separator",
-                  { label: "复制路径", onSelect: () => void navigator.clipboard.writeText(root) },
+                  { label: t("复制路径"), onSelect: () => void navigator.clipboard.writeText(root) },
                 ])
               }
             >
               {i < 9 && <span className="ws-key">⌘{i + 1}</span>}
               <span className="ws-name">{labels[root]}</span>
               {s?.branch && <span className="ws-branch">{s.branch}</span>}
-              {s?.hasState && <span className="ws-dot warn" title="合并或变基进行中" />}
+              {s?.hasState && <span className="ws-dot warn" title={t("合并或变基进行中")} />}
               {s && s.changes > 0 && (
-                <span className="ws-changes" title={`${s.changes} 个文件有改动`}>
+                <span className="ws-changes" title={t("{n} 个文件有改动", { n: s.changes })}>
                   {s.changes}
                 </span>
               )}
-              {s?.isBusy && <span className="ws-spin" title="正在执行" />}
+              {s?.isBusy && <span className="ws-spin" title={t("正在执行")} />}
               <button
                 className="ws-close"
-                title="关闭工作区 (⌘W)"
+                title={t("关闭工作区 (⌘W)")}
                 onClick={e => {
                   e.stopPropagation();
                   onClose(root);
@@ -96,13 +98,20 @@ export function TabBar({
             </div>
           );
         })}
-        <button className="ws-add" title="打开文件夹 (⌘O)" onClick={onAdd}>
+        <button className="ws-add" title={t("打开文件夹 (⌘O)")} onClick={onAdd}>
           <IconPlus />
         </button>
       </div>
       <span className="ws-count" data-tauri-drag-region>
-        {tabs.length} 个工作区
+        {t("{n} 个工作区", { n: tabs.length })}
       </span>
+      <div className="lang-switch" role="group" aria-label={t("界面语言")}>
+        {LOCALES.map(l => (
+          <button key={l.value} className={`lang-btn${locale === l.value ? " on" : ""}`} onClick={() => setLocale(l.value)}>
+            {l.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

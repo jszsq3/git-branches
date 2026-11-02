@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import { t } from "../lib/i18n";
 import type { Ref } from "../lib/repo";
 import type { BranchActions } from "../state/branch-actions";
 import { useDialogs } from "../state/dialogs";
@@ -11,6 +12,7 @@ import {
   IconFetch,
   IconFolder,
   IconPlus,
+  IconPull,
   IconSearch,
   IconStar,
   IconTag,
@@ -109,8 +111,19 @@ export function BranchTree({
         )}
         <span className={`tree-label${isHead ? " is-head" : ""}`}>{label}</span>
         {r.kind === "local" && (r.ahead > 0 || r.behind > 0 || r.isGone) && (
-          <span className={`track${r.isGone ? " gone" : ""}`}>
-            {r.isGone ? "上游已删" : `${r.ahead ? `↑${r.ahead}` : ""}${r.behind ? ` ↓${r.behind}` : ""}`.trim()}
+          <span
+            className={`track${r.isGone ? " gone" : ""}`}
+            title={
+              r.isGone
+                ? t("上游分支 {upstream} 已在远端删除", { upstream: r.upstream })
+                : t("相对 {upstream}：领先 {ahead}、落后 {behind}。右键“更新”可快进到上游。", {
+                    upstream: r.upstream,
+                    ahead: r.ahead,
+                    behind: r.behind,
+                  })
+            }
+          >
+            {r.isGone ? t("上游已删") : `${r.ahead ? `↑${r.ahead}` : ""}${r.behind ? ` ↓${r.behind}` : ""}`.trim()}
           </span>
         )}
       </div>
@@ -168,15 +181,32 @@ export function BranchTree({
   return (
     <div className="branch-panel">
       <div className="side-toolbar">
-        <button className="icon-btn" title="新建分支" onClick={() => void actions.newBranch(selectedRef?.name ?? "HEAD")}>
+        <button className="icon-btn" title={t("新建分支")} onClick={() => void actions.newBranch(selectedRef?.name ?? "HEAD")}>
           <IconPlus />
         </button>
-        <button className="icon-btn" title="获取所有远端" disabled={Boolean(busy)} onClick={() => void run("获取", ["fetch", "--all", "--prune"])}>
+        <button
+          className="icon-btn"
+          title={t("从所有远端获取最新提交")}
+          disabled={Boolean(busy)}
+          onClick={() => void run(t("获取"), ["fetch", "--all", "--prune"])}
+        >
           <IconFetch />
         </button>
         <button
           className="icon-btn"
-          title="删除分支"
+          title={
+            selectedRef?.kind === "local" && selectedRef.upstream
+              ? t("更新 {name}：获取并快进到 {upstream}", { name: selectedRef.name, upstream: selectedRef.upstream })
+              : t("更新选中的本地分支")
+          }
+          disabled={!canAct || selectedRef?.kind !== "local" || !selectedRef.upstream}
+          onClick={() => selectedRef && void actions.update(selectedRef)}
+        >
+          <IconPull />
+        </button>
+        <button
+          className="icon-btn"
+          title={t("删除分支")}
           disabled={!canAct || isSelectedHead}
           onClick={() => selectedRef && void actions.remove(selectedRef)}
         >
@@ -184,7 +214,7 @@ export function BranchTree({
         </button>
         <button
           className="icon-btn"
-          title="与当前分支比较"
+          title={t("与当前分支比较")}
           disabled={!canAct || isSelectedHead}
           onClick={() => selectedRef && onCompare(selectedRef)}
         >
@@ -193,20 +223,20 @@ export function BranchTree({
         <span className="side-sep" />
         <button
           className="icon-btn"
-          title={selectedRef && favorites.includes(selectedRef.name) ? "取消收藏" : "收藏"}
+          title={selectedRef && favorites.includes(selectedRef.name) ? t("取消收藏") : t("收藏")}
           disabled={!selectedRef || selectedRef.kind === "tag"}
           onClick={() => selectedRef && toggleFavorite(selectedRef.name)}
         >
           <IconStar filled={Boolean(selectedRef && favorites.includes(selectedRef.name))} />
         </button>
-        <button className="icon-btn" title="定位到当前分支" onClick={() => onSelect({ kind: "head" })}>
+        <button className="icon-btn" title={t("定位到当前分支")} onClick={() => onSelect({ kind: "head" })}>
           <IconTarget />
         </button>
       </div>
       <div className="tree">
         <label className="tree-search">
           <IconSearch />
-          <input value={filter} placeholder="搜索分支或标签" onChange={e => setFilter(e.target.value)} spellCheck={false} />
+          <input value={filter} placeholder={t("搜索分支或标签")} onChange={e => setFilter(e.target.value)} spellCheck={false} />
         </label>
         <div className="tree-body">
           <div
@@ -219,10 +249,15 @@ export function BranchTree({
           >
             <span className="tree-twisty" />
             <span className="tree-label">
-              HEAD <span className="muted">（{head.branch ? `当前分支 ${head.branch}` : `游离于 ${head.sha.slice(0, 8)}`}）</span>
+              HEAD{" "}
+              <span className="muted">
+                {head.branch
+                  ? t("（当前分支 {name}）", { name: head.branch })
+                  : t("（游离于 {sha}）", { sha: head.sha.slice(0, 8) })}
+              </span>
             </span>
           </div>
-          {section("local", "本地", localShown, () => [
+          {section("local", t("本地"), localShown, () => [
             ...pinned.map(r => refRow(r, 1, r.name)),
             ...folderRows(
               buildTree(
@@ -232,8 +267,8 @@ export function BranchTree({
               1,
             ),
           ])}
-          {section("remote", "远端", remote.filter(match), () => folderRows(buildTree("remote", remote.filter(match)), 1))}
-          {section("tags", "标签", tags.filter(match), () => tags.filter(match).slice(0, 500).map(r => refRow(r, 1, r.name)))}
+          {section("remote", t("远端"), remote.filter(match), () => folderRows(buildTree("remote", remote.filter(match)), 1))}
+          {section("tags", t("标签"), tags.filter(match), () => tags.filter(match).slice(0, 500).map(r => refRow(r, 1, r.name)))}
         </div>
       </div>
     </div>

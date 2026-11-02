@@ -1,6 +1,7 @@
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import type { ReactNode } from "react";
 
+import { t } from "../lib/i18n";
 import type { FileChange } from "../lib/repo";
 import type { MenuItem } from "../state/dialogs";
 import { useDialogs } from "../state/dialogs";
@@ -12,10 +13,10 @@ export async function openInApp(root: string, path: string) {
 export function fileMenu(root: string, file: FileChange, extra: MenuItem[] = []): MenuItem[] {
   const items: MenuItem[] = [];
   if (file.status !== "D") {
-    items.push({ label: "打开文件", onSelect: () => void openInApp(root, file.path) });
-    items.push({ label: "在 Finder 中显示", onSelect: () => void revealItemInDir(`${root}/${file.path}`) });
+    items.push({ label: t("打开文件"), onSelect: () => void openInApp(root, file.path) });
+    items.push({ label: t("在 Finder 中显示"), onSelect: () => void revealItemInDir(`${root}/${file.path}`) });
   }
-  items.push({ label: "复制路径", onSelect: () => void navigator.clipboard.writeText(file.path) });
+  items.push({ label: t("复制路径"), onSelect: () => void navigator.clipboard.writeText(file.path) });
   if (extra.length) items.push("separator", ...extra);
   return items;
 }

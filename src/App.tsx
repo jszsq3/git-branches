@@ -2,6 +2,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useState } from "react";
 
 import { git } from "./lib/git";
+import { syncMenuLocale, t, useLocale } from "./lib/i18n";
 import { findRoot } from "./lib/repo";
 import { forgetRepo, openTabs, recentRepos, rememberRepo, saveOpenTabs } from "./lib/storage";
 import { DialogsProvider, useDialogs } from "./state/dialogs";
@@ -22,6 +23,8 @@ export default function App() {
 
 function Shell() {
   const dialogs = useDialogs();
+  // 订阅语言：切换时整棵界面重绘
+  const locale = useLocale();
   const [recent, setRecent] = useState<string[]>(recentRepos);
   const [tabs, setTabs] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -33,9 +36,9 @@ function Shell() {
       let found = await findRoot(folder).catch(() => null);
       if (!found) {
         const ok = await dialogs.confirm({
-          title: "不是 Git 仓库",
-          message: `${folder} 不在任何 Git 仓库中。要在这里初始化一个新仓库吗？`,
-          confirmLabel: "初始化仓库",
+          title: t("不是 Git 仓库"),
+          message: t("{folder} 不在任何 Git 仓库中。要在这里初始化一个新仓库吗？", { folder }),
+          confirmLabel: t("初始化仓库"),
         });
         if (!ok) {
           forgetRepo(folder);
@@ -46,7 +49,7 @@ function Shell() {
           await git(folder, ["init"]);
           found = folder;
         } catch (e) {
-          await dialogs.alert("初始化失败", e instanceof Error ? e.message : String(e));
+          await dialogs.alert(t("初始化失败"), e instanceof Error ? e.message : String(e));
           return;
         }
       }
@@ -60,7 +63,7 @@ function Shell() {
   );
 
   const pickFolder = useCallback(async () => {
-    const picked = await open({ directory: true, multiple: false, title: "选择包含 Git 仓库的文件夹" });
+    const picked = await open({ directory: true, multiple: false, title: t("选择包含 Git 仓库的文件夹") });
     if (typeof picked === "string") await openRepo(picked);
   }, [openRepo]);
 
@@ -112,8 +115,13 @@ function Shell() {
   }, [tabs, active, isRestored]);
 
   useEffect(() => {
-    document.title = active ? `${tabLabels(tabs)[active]} — Git 分支` : "Git 分支";
-  }, [active, tabs]);
+    document.title = active ? `${tabLabels(tabs)[active]} — ${t("Git 分支")}` : t("Git 分支");
+  }, [active, tabs, locale]);
+
+  // 把保存的语言同步给原生菜单
+  useEffect(() => {
+    syncMenuLocale();
+  }, []);
 
   // ⌘1…⌘9 切换，⌘W 关闭当前，⌘O 打开文件夹，⌃Tab / ⌃⇧Tab 前后切换
   useEffect(() => {
@@ -198,21 +206,21 @@ function Welcome({
   return (
     <div className="welcome">
       <div className="welcome-card">
-        <h1>Git 分支</h1>
-        <p className="muted">打开一个文件夹，管理它所在仓库的分支、提交和改动。可以同时打开多个工作区，在顶部标签间切换。</p>
+        <h1>{t("Git 分支")}</h1>
+        <p className="muted">{t("打开一个文件夹，管理它所在仓库的分支、提交和改动。可以同时打开多个工作区，在顶部标签间切换。")}</p>
         <button className="btn primary large" onClick={onPick}>
-          <IconFolder /> 打开文件夹…
+          <IconFolder /> {t("打开文件夹…")}
         </button>
         {recent.length > 0 && (
           <div className="recent">
-            <div className="recent-title">最近打开</div>
+            <div className="recent-title">{t("最近打开")}</div>
             {recent.map(r => (
               <div key={r} className="recent-row" onClick={() => onOpen(r)}>
                 <span className="recent-name">{r.split("/").pop()}</span>
                 <span className="recent-path">{r}</span>
                 <button
                   className="mini"
-                  title="从列表移除"
+                  title={t("从列表移除")}
                   onClick={e => {
                     e.stopPropagation();
                     onForget(r);

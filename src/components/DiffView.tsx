@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 
 import { parseDiff } from "../lib/diff";
-import { STATUS_LABEL } from "../lib/format";
+import { statusLabel } from "../lib/format";
+import { t, useLocale } from "../lib/i18n";
 import type { FileChange } from "../lib/repo";
 import { openInApp } from "./FileList";
 import { IconOpen } from "./icons";
@@ -23,7 +24,9 @@ export function DiffView({
   onClose?: () => void;
   title?: string;
 }) {
-  const lines = useMemo(() => (text === null ? [] : parseDiff(text)), [text]);
+  const locale = useLocale();
+  // 解析结果里带有提示文案，切换语言时重新解析
+  const lines = useMemo(() => (text === null ? [] : parseDiff(text)), [text, locale]);
   const shown = lines.slice(0, MAX_LINES);
   const added = lines.filter(l => l.kind === "add").length;
   const removed = lines.filter(l => l.kind === "del").length;
@@ -35,26 +38,26 @@ export function DiffView({
           {file.oldPath ? `${file.oldPath} → ` : ""}
           {file.path}
         </span>
-        <span className="muted">{title ?? STATUS_LABEL[file.status]}</span>
+        <span className="muted">{title ?? statusLabel(file.status)}</span>
         <span className="diff-stat">
           <span className="add">+{added}</span> <span className="del">−{removed}</span>
         </span>
         <span className="spacer" />
         {file.status !== "D" && (
           <button className="btn small" onClick={() => void openInApp(root, file.path)}>
-            <IconOpen /> 打开文件
+            <IconOpen /> {t("打开文件")}
           </button>
         )}
         {onClose && (
-          <button className="btn small" onClick={onClose} title="关闭差异">
-            关闭
+          <button className="btn small" onClick={onClose} title={t("关闭差异")}>
+            {t("关闭")}
           </button>
         )}
       </div>
       <div className="diff-body">
         {error && <div className="empty error">{error}</div>}
-        {text === null && !error && <div className="empty">加载中…</div>}
-        {text !== null && lines.length === 0 && <div className="empty">没有内容差异（可能只改了权限或是空文件）</div>}
+        {text === null && !error && <div className="empty">{t("加载中…")}</div>}
+        {text !== null && lines.length === 0 && <div className="empty">{t("没有内容差异（可能只改了权限或是空文件）")}</div>}
         <table className="diff-table">
           <tbody>
             {shown.map((l, i) =>
@@ -83,7 +86,7 @@ export function DiffView({
             )}
           </tbody>
         </table>
-        {lines.length > MAX_LINES && <div className="empty">差异过长，只显示前 {MAX_LINES} 行</div>}
+        {lines.length > MAX_LINES && <div className="empty">{t("差异过长，只显示前 {n} 行", { n: MAX_LINES })}</div>}
       </div>
     </div>
   );

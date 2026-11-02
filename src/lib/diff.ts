@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+
 export type DiffLine =
   | { kind: "hunk"; text: string }
   | { kind: "add" | "del" | "ctx"; text: string; old?: number; new?: number }
@@ -19,14 +21,14 @@ export function parseDiff(text: string): DiffLine[] {
       continue;
     }
     if (!inHunk) {
-      if (raw.startsWith("Binary files")) lines.push({ kind: "meta", text: "二进制文件，不显示差异" });
-      else if (raw.startsWith("similarity index")) lines.push({ kind: "meta", text: `相似度 ${raw.slice(17)}` });
+      if (raw.startsWith("Binary files")) lines.push({ kind: "meta", text: t("二进制文件，不显示差异") });
+      else if (raw.startsWith("similarity index")) lines.push({ kind: "meta", text: t("相似度 {value}", { value: raw.slice(17) }) });
       continue;
     }
     if (raw.startsWith("+")) lines.push({ kind: "add", text: raw.slice(1), new: newNo++ });
     else if (raw.startsWith("-")) lines.push({ kind: "del", text: raw.slice(1), old: oldNo++ });
     else if (raw.startsWith(" ")) lines.push({ kind: "ctx", text: raw.slice(1), old: oldNo++, new: newNo++ });
-    else if (raw.startsWith("\\")) lines.push({ kind: "meta", text: "文件末尾没有换行" });
+    else if (raw.startsWith("\\")) lines.push({ kind: "meta", text: t("文件末尾没有换行") });
   }
   return lines;
 }

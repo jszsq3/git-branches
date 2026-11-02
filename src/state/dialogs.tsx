@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
+import { t, useLocale } from "../lib/i18n";
+
 export type PromptOptions = {
   title: string;
   label?: string;
@@ -38,6 +40,8 @@ type Modal =
 const DialogsContext = createContext<DialogsValue | null>(null);
 
 export function DialogsProvider({ children }: { children: ReactNode }) {
+  // 切换语言时重绘弹窗按钮
+  useLocale();
   const [modal, setModal] = useState<Modal | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
 
@@ -85,7 +89,7 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
                 modal.resolve();
               }}
             >
-              知道了
+              {t("知道了")}
             </button>
           </div>
         </ModalFrame>
@@ -107,7 +111,7 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
                 modal.resolve(false);
               }}
             >
-              取消
+              {t("取消")}
             </button>
             <button
               className={`btn ${modal.options.isDanger ? "danger" : "primary"}`}
@@ -117,7 +121,7 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
                 modal.resolve(true);
               }}
             >
-              {modal.options.confirmLabel ?? "确定"}
+              {modal.options.confirmLabel ?? t("确定")}
             </button>
           </div>
         </ModalFrame>
@@ -192,10 +196,10 @@ function PromptModal({
         )}
         <div className="modal-actions">
           <button type="button" className="btn" onClick={() => onDone(null)}>
-            取消
+            {t("取消")}
           </button>
           <button type="submit" className="btn primary" disabled={!value.trim() || Boolean(error)}>
-            {options.confirmLabel ?? "确定"}
+            {options.confirmLabel ?? t("确定")}
           </button>
         </div>
       </form>

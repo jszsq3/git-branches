@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import { t } from "./i18n";
+
 export type GitOutput = { code: number; stdout: string; stderr: string };
 
 export class GitError extends Error {
@@ -7,7 +9,7 @@ export class GitError extends Error {
     readonly args: string[],
     readonly output: GitOutput,
   ) {
-    super((output.stderr || output.stdout).trim() || `git ${args[0]} 退出码 ${output.code}`);
+    super((output.stderr || output.stdout).trim() || t("git {cmd} 退出码 {code}", { cmd: args[0] ?? "", code: output.code }));
   }
 }
 

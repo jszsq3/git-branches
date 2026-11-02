@@ -2,7 +2,8 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 use serde::Serialize;
-use tauri::menu::{MenuBuilder, SubmenuBuilder};
+use tauri::menu::{Menu, MenuBuilder, SubmenuBuilder};
+use tauri::{AppHandle, Manager, Runtime};
 
 #[derive(Serialize)]
 struct GitOutput {
@@ -60,35 +61,50 @@ fn git_binary() -> &'static str {
     "git"
 }
 
+/// 菜单栏。默认菜单的“关闭窗口”占用 ⌘W，这里不放它，⌘W 交给页面关闭当前工作区标签。
+fn build_menu<R: Runtime, M: Manager<R>>(app: &M, is_english: bool) -> tauri::Result<Menu<R>> {
+    let pick = |zh: &'static str, en: &'static str| if is_english { en } else { zh };
+    let app_menu = SubmenuBuilder::new(app, "GitBranches")
+        .about_with_text(pick("关于 GitBranches", "About GitBranches"), None)
+        .separator()
+        .hide_with_text(pick("隐藏 GitBranches", "Hide GitBranches"))
+        .hide_others_with_text(pick("隐藏其他", "Hide Others"))
+        .show_all_with_text(pick("全部显示", "Show All"))
+        .separator()
+        .quit_with_text(pick("退出 GitBranches", "Quit GitBranches"))
+        .build()?;
+    let edit = SubmenuBuilder::new(app, pick("编辑", "Edit"))
+        .undo_with_text(pick("撤销", "Undo"))
+        .redo_with_text(pick("重做", "Redo"))
+        .separator()
+        .cut_with_text(pick("剪切", "Cut"))
+        .copy_with_text(pick("拷贝", "Copy"))
+        .paste_with_text(pick("粘贴", "Paste"))
+        .select_all_with_text(pick("全选", "Select All"))
+        .build()?;
+    let window = SubmenuBuilder::new(app, pick("窗口", "Window"))
+        .minimize_with_text(pick("最小化", "Minimize"))
+        .maximize_with_text(pick("缩放", "Zoom"))
+        .fullscreen_with_text(pick("进入全屏幕", "Enter Full Screen"))
+        .build()?;
+    MenuBuilder::new(app).items(&[&app_menu, &edit, &window]).build()
+}
+
+/// 界面切换语言时重建菜单栏。
+#[tauri::command]
+fn set_menu_locale(app: AppHandle, locale: String) -> Result<(), String> {
+    let menu = build_menu(&app, locale == "en").map_err(|e| e.to_string())?;
+    app.set_menu(menu).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        // 默认菜单的“关闭窗口”占用 ⌘W；这里不放它，⌘W 交给页面关闭当前工作区标签
-        .menu(|app| {
-            let app_menu = SubmenuBuilder::new(app, "GitBranches")
-                .about(None)
-                .separator()
-                .hide()
-                .hide_others()
-                .show_all()
-                .separator()
-                .quit()
-                .build()?;
-            let edit = SubmenuBuilder::new(app, "编辑")
-                .undo()
-                .redo()
-                .separator()
-                .cut()
-                .copy()
-                .paste()
-                .select_all()
-                .build()?;
-            let window = SubmenuBuilder::new(app, "窗口").minimize().maximize().fullscreen().build()?;
-            MenuBuilder::new(app).items(&[&app_menu, &edit, &window]).build()
-        })
-        .invoke_handler(tauri::generate_handler![git, path_exists])
+        .menu(|app| build_menu(app, false))
+        .invoke_handler(tauri::generate_handler![git, path_exists, set_menu_locale])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { formatFullDate } from "../lib/format";
+import { t } from "../lib/i18n";
 import { branchesContaining, loadCommit, loadCommitFiles, loadRangeFiles } from "../lib/repo";
 import type { CommitInfo, FileChange } from "../lib/repo";
 import { useRepo } from "../state/repo-context";
@@ -57,7 +58,7 @@ export function CommitDetails({
     };
   }, [root, sha, range?.from, range?.to, version]);
 
-  if (!sha && !range) return <div className="details empty">选择一个提交查看详情</div>;
+  if (!sha && !range) return <div className="details empty">{t("选择一个提交查看详情")}</div>;
   if (error) return <div className="details empty error">{error}</div>;
 
   return (
@@ -68,21 +69,21 @@ export function CommitDetails({
           {info.body && <pre className="commit-body">{info.body}</pre>}
           <RefBadges refs={info.refs} />
           <dl className="meta">
-            <dt>提交</dt>
+            <dt>{t("提交")}</dt>
             <dd>
               <span className="mono selectable">{info.sha}</span>
               <button className="link" onClick={() => void navigator.clipboard.writeText(info.sha)}>
-                复制
+                {t("复制")}
               </button>
             </dd>
-            <dt>作者</dt>
+            <dt>{t("作者")}</dt>
             <dd>
               {info.author} <span className="muted">&lt;{info.email}&gt;</span>
               <div className="muted">{formatFullDate(info.date)}</div>
             </dd>
             {(info.committer !== info.author || info.commitDate !== info.date) && (
               <>
-                <dt>提交者</dt>
+                <dt>{t("提交者")}</dt>
                 <dd>
                   {info.committer}
                   <div className="muted">{formatFullDate(info.commitDate)}</div>
@@ -91,7 +92,7 @@ export function CommitDetails({
             )}
             {info.parents.length > 0 && (
               <>
-                <dt>父提交</dt>
+                <dt>{t("父提交")}</dt>
                 <dd>
                   {info.parents.map(p => (
                     <button key={p} className="link mono" onClick={() => onSelectSha(p)}>
@@ -101,16 +102,18 @@ export function CommitDetails({
                 </dd>
               </>
             )}
-            <dt>所在分支</dt>
+            <dt>{t("所在分支")}</dt>
             <dd>
               {contains === null ? (
                 <button className="link" onClick={() => void branchesContaining(root, info.sha).then(setContains)}>
-                  查询
+                  {t("查询")}
                 </button>
               ) : contains.length === 0 ? (
-                <span className="muted">不在任何分支上</span>
+                <span className="muted">{t("不在任何分支上")}</span>
               ) : (
-                <span className="contains">{contains.slice(0, 30).join("、") + (contains.length > 30 ? ` 等 ${contains.length} 个` : "")}</span>
+                <span className="contains">
+                  {contains.slice(0, 30).join(t("、")) + (contains.length > 30 ? t(" 等 {n} 个", { n: contains.length }) : "")}
+                </span>
               )}
             </dd>
           </dl>
@@ -121,12 +124,12 @@ export function CommitDetails({
           <div className="commit-subject">
             {range.from} … {range.to}
           </div>
-          <div className="muted">自分叉点以来 {range.to} 上改动的文件</div>
+          <div className="muted">{t("自分叉点以来 {name} 上改动的文件", { name: range.to })}</div>
         </div>
       )}
       <div className="files-head">
-        {files.length} 个文件
-        {info && info.parents.length > 1 && <span className="muted">（相对第一个父提交）</span>}
+        {t("{n} 个文件", { n: files.length })}
+        {info && info.parents.length > 1 && <span className="muted">{t("（相对第一个父提交）")}</span>}
       </div>
       <div className="files">
         {files.map(f => (

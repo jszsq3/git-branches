@@ -1310,3 +1310,30 @@ textarea {
   font-size: 12px;
   white-space: nowrap;
 }
+.lang-switch {
+  align-self: center;
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  flex: none;
+}
+.lang-btn {
+  min-width: 30px;
+  height: 22px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.lang-btn:hover:not(.on) {
+  color: var(--text);
+}
+.lang-btn.on {
+  background: var(--accent);
+  color: #fff;
+}

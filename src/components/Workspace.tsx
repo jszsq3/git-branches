@@ -1,6 +1,7 @@
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useCallback, useEffect, useState } from "react";
 
+import { t } from "../lib/i18n";
 import { loadCommitDiff, loadRangeDiff } from "../lib/repo";
 import type { CommitInfo, FileChange, Ref } from "../lib/repo";
 import { useBranchActions } from "../state/branch-actions";
@@ -20,7 +21,8 @@ import { Splitter, useSize } from "./Splitter";
 type Compare = { ref: Ref; direction: "incoming" | "outgoing" };
 type OpenDiff = { file: FileChange; source: { commit: CommitInfo } | { from: string; to: string } };
 
-const ALL: LogScope = { revs: [], label: "全部" };
+/** 日志范围：null 表示全部分支 */
+type Scope = { revs: string[]; name: string } | null;
 
 export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string[]; onOpenRepo: (root: string) => void; onPickFolder: () => void }) {
   const repo = useRepo();
@@ -28,7 +30,7 @@ export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string
   const dialogs = useDialogs();
   const [tab, setTab] = useState<"log" | "changes">("log");
   const [selection, setSelection] = useState<TreeSelection>({ kind: "head" });
-  const [scope, setScope] = useState<LogScope>(ALL);
+  const [scope, setScope] = useState<Scope>(null);
   const [compare, setCompare] = useState<Compare | null>(null);
   const [sha, setSha] = useState<string | null>(null);
   const [range, setRange] = useState<{ from: string; to: string } | null>(null);
@@ -52,7 +54,7 @@ export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string
   // 换仓库时复位视图
   useEffect(() => {
     setSelection({ kind: "head" });
-    setScope(ALL);
+    setScope(null);
     setCompare(null);
     setSha(null);
     setRange(null);
@@ -64,18 +66,21 @@ export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string
     setCompare(null);
     setRange(null);
     setTab("log");
-    if (s.kind === "head") setScope({ revs: ["HEAD"], label: head.branch || "HEAD" });
+    if (s.kind === "head") setScope({ revs: ["HEAD"], name: head.branch || "HEAD" });
     else {
       const full = s.kind === "local" ? `refs/heads/${s.name}` : s.kind === "remote" ? `refs/remotes/${s.name}` : `refs/tags/${s.name}`;
-      setScope({ revs: [full], label: s.name });
+      setScope({ revs: [full], name: s.name });
     }
   };
 
+  const current = head.branch || "HEAD";
   const logScope: LogScope = compare
     ? compare.direction === "incoming"
-      ? { revs: [`HEAD..${compare.ref.name}`], label: `${compare.ref.name} 独有` }
-      : { revs: [`${compare.ref.name}..HEAD`], label: `${head.branch || "HEAD"} 独有` }
-    : scope;
+      ? { revs: [`HEAD..${compare.ref.name}`], label: t("{name} 独有", { name: compare.ref.name }) }
+      : { revs: [`${compare.ref.name}..HEAD`], label: t("{name} 独有", { name: current }) }
+    : scope
+      ? { revs: scope.revs, label: scope.name }
+      : { revs: [], label: t("全部") };
 
   useEffect(() => {
     if (!openDiff) return;
@@ -86,7 +91,7 @@ export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string
       "commit" in openDiff.source
         ? loadCommitDiff(root, openDiff.source.commit, openDiff.file)
         : loadRangeDiff(root, openDiff.source.from, openDiff.source.to, openDiff.file);
-    p.then(t => alive && setDiffText(t)).catch(e => alive && setDiffError(e instanceof Error ? e.message : String(e)));
+    p.then(text => alive && setDiffText(text)).catch(e => alive && setDiffError(e instanceof Error ? e.message : String(e)));
     return () => {
       alive = false;
     };
@@ -101,22 +106,24 @@ export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string
       .sort((a, b) => b.date - a.date)
       .slice(0, 12);
     const items: MenuItem[] = [
-      { label: "新建分支…", onSelect: () => void actions.newBranch("HEAD") },
+      { label: t("新建分支…"), onSelect: () => void actions.newBranch("HEAD") },
       "separator",
-      ...recentLocal.map(r => ({ label: `检出 ${r.name}`, onSelect: () => void actions.checkout(r) })),
+      ...recentLocal.map(r => ({ label: t("检出 {name}", { name: r.name }), onSelect: () => void actions.checkout(r) })),
     ];
     dialogs.menu(e, items);
   };
 
   const repoMenu = (e: React.MouseEvent) => {
     const items: MenuItem[] = [
-      { label: "打开文件夹…", onSelect: onPickFolder },
-      { label: "在 Finder 中显示", onSelect: () => void revealItemInDir(root) },
+      { label: t("打开文件夹…"), onSelect: onPickFolder },
+      { label: t("在 Finder 中显示"), onSelect: () => void revealItemInDir(root) },
     ];
     const others = recent.filter(r => r !== root);
     if (others.length) items.push("separator", ...others.map(r => ({ label: r, onSelect: () => onOpenRepo(r) })));
     dialogs.menu(e, items);
   };
+
+  const stateLabel = head.state === "rebasing" ? t("变基中") : head.state === "merging" ? t("合并中") : t("进行中");
 
   return (
     <div className="app">
@@ -125,9 +132,9 @@ export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string
           <span className="repo-name">{root.split("/").pop()}</span>
           <span className="caret">▾</span>
         </button>
-        <button className="branch-btn" onClick={branchMenu} title="切换或新建分支">
+        <button className="branch-btn" onClick={branchMenu} title={t("切换或新建分支")}>
           <IconBranch />
-          <span>{head.branch || `游离 ${head.sha.slice(0, 8)}`}</span>
+          <span>{head.branch || t("游离 {sha}", { sha: head.sha.slice(0, 8) })}</span>
           {headRef && (headRef.ahead > 0 || headRef.behind > 0) && (
             <span className="track">
               {headRef.ahead ? `↑${headRef.ahead}` : ""}
@@ -138,16 +145,26 @@ export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string
         </button>
         <span className="spacer" />
         {busy && <span className="busy">{busy}…</span>}
-        <button className="tool" disabled={Boolean(busy)} onClick={() => void run("获取", ["fetch", "--all", "--prune"])} title="获取所有远端">
-          <IconFetch /> 获取
+        <button
+          className="tool"
+          disabled={Boolean(busy)}
+          onClick={() => void run(t("获取"), ["fetch", "--all", "--prune"])}
+          title={t("从所有远端获取最新提交，只更新远端分支，不改动本地分支")}
+        >
+          <IconFetch /> {t("获取")}
         </button>
-        <button className="tool" disabled={Boolean(busy) || !headRef?.upstream} onClick={() => void actions.pull()} title="拉取当前分支">
-          <IconPull /> 拉取
+        <button
+          className="tool"
+          disabled={Boolean(busy) || !headRef?.upstream}
+          onClick={() => void actions.pull()}
+          title={t("把当前分支更新到上游的最新提交")}
+        >
+          <IconPull /> {t("拉取")}
         </button>
-        <button className="tool" disabled={Boolean(busy) || !headRef} onClick={() => headRef && void actions.push(headRef)} title="推送当前分支">
-          <IconPush /> 推送
+        <button className="tool" disabled={Boolean(busy) || !headRef} onClick={() => headRef && void actions.push(headRef)} title={t("推送当前分支")}>
+          <IconPush /> {t("推送")}
         </button>
-        <button className="tool" onClick={() => void reload()} title="刷新">
+        <button className="tool" onClick={() => void reload()} title={t("刷新")}>
           <IconRefresh />
         </button>
       </header>
@@ -160,12 +177,13 @@ export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string
         <div className="content">
           <nav className="tabs">
             <button className={`tab${tab === "log" ? " active" : ""}`} onClick={() => setTab("log")}>
-              日志
+              {t("日志")}
             </button>
             <button className={`tab${tab === "changes" ? " active" : ""}`} onClick={() => setTab("changes")}>
-              提交{changeCount > 0 && <span className="tab-count">{changeCount}</span>}
+              {t("提交")}
+              {changeCount > 0 && <span className="tab-count">{changeCount}</span>}
             </button>
-            {head.state && <span className="state-pill">{head.state === "rebasing" ? "变基中" : head.state === "merging" ? "合并中" : "进行中"}</span>}
+            {head.state && <span className="state-pill">{stateLabel}</span>}
           </nav>
           {tab === "changes" ? (
             <ChangesView />
@@ -183,25 +201,23 @@ export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string
                     }}
                     onClearScope={() => {
                       setCompare(null);
-                      setScope(ALL);
+                      setScope(null);
                     }}
                     banner={
                       compare && (
                         <div className="compare-bar">
-                          <span>
-                            比较 <b>{compare.ref.name}</b> 与 <b>{head.branch || "HEAD"}</b>：
-                          </span>
+                          <span>{t("比较 {name} 与 {current}：", { name: compare.ref.name, current })}</span>
                           <button
                             className={`seg${compare.direction === "incoming" ? " on" : ""}`}
                             onClick={() => setCompare({ ...compare, direction: "incoming" })}
                           >
-                            {compare.ref.name} 有、当前没有
+                            {t("{name} 有、当前没有", { name: compare.ref.name })}
                           </button>
                           <button
                             className={`seg${compare.direction === "outgoing" ? " on" : ""}`}
                             onClick={() => setCompare({ ...compare, direction: "outgoing" })}
                           >
-                            当前有、{compare.ref.name} 没有
+                            {t("当前有、{name} 没有", { name: compare.ref.name })}
                           </button>
                           <button
                             className="link"
@@ -215,11 +231,11 @@ export function Workspace({ recent, onOpenRepo, onPickFolder }: { recent: string
                               );
                             }}
                           >
-                            看改动文件
+                            {t("看改动文件")}
                           </button>
                           <span className="spacer" />
                           <button className="link" onClick={() => setCompare(null)}>
-                            结束比较
+                            {t("结束比较")}
                           </button>
                         </div>
                       )

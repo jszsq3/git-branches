@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { t } from "../lib/i18n";
 import { lastCommitMessage, loadWorkingDiff } from "../lib/repo";
 import type { FileChange } from "../lib/repo";
 import { useDialogs } from "../state/dialogs";
@@ -41,49 +42,59 @@ export function ChangesView() {
     setDiff(null);
     setDiffError("");
     loadWorkingDiff(root, picked.file, picked.area === "staged")
-      .then(t => alive && setDiff(t))
+      .then(text => alive && setDiff(text))
       .catch(e => alive && setDiffError(e instanceof Error ? e.message : String(e)));
     return () => {
       alive = false;
     };
   }, [root, picked, version]);
 
-  const stage = (paths: string[]) => run("暂存", ["add", "--", ...paths]);
+  const stage = (paths: string[]) => run(t("暂存"), ["add", "--", ...paths]);
   const unstage = (paths: string[]) =>
-    head.sha ? run("取消暂存", ["restore", "--staged", "--", ...paths]) : run("取消暂存", ["rm", "--cached", "-r", "--", ...paths]);
+    head.sha
+      ? run(t("取消暂存"), ["restore", "--staged", "--", ...paths])
+      : run(t("取消暂存"), ["rm", "--cached", "-r", "--", ...paths]);
   const discard = async (files: FileChange[]) => {
     const untracked = files.filter(f => f.status === "?").map(f => f.path);
     const tracked = files.filter(f => f.status !== "?").map(f => f.path);
+    const what =
+      files.length === 1
+        ? t("还原 {path} 的未暂存改动？", { path: files[0]?.path ?? "" })
+        : t("还原 {n} 个文件的未暂存改动？", { n: files.length });
+    const untrackedNote = !untracked.length
+      ? ""
+      : files.length === 1
+        ? t("这是未跟踪文件，会被直接删除。")
+        : t("其中 {n} 个未跟踪文件会被直接删除。", { n: untracked.length });
     const ok = await dialogs.confirm({
-      title: "还原改动",
-      message:
-        files.length === 1
-          ? `还原 ${files[0]?.path} 的未暂存改动？${untracked.length ? "这是未跟踪文件，会被直接删除。" : ""}此操作无法撤销。`
-          : `还原 ${files.length} 个文件的未暂存改动？${untracked.length ? `其中 ${untracked.length} 个未跟踪文件会被直接删除。` : ""}此操作无法撤销。`,
-      confirmLabel: "还原",
+      title: t("还原改动"),
+      message: `${what}${untrackedNote}${t("此操作无法撤销。")}`,
+      confirmLabel: t("还原"),
       isDanger: true,
     });
     if (!ok) return;
-    if (tracked.length) await run("还原", ["restore", "--", ...tracked]);
-    if (untracked.length) await run("删除未跟踪文件", ["clean", "-f", "--", ...untracked]);
+    if (tracked.length) await run(t("还原"), ["restore", "--", ...tracked]);
+    if (untracked.length) await run(t("删除未跟踪文件"), ["clean", "-f", "--", ...untracked]);
   };
 
   const resolveWith = (path: string, side: "ours" | "theirs") =>
-    run(`采用${side === "ours" ? "我方" : "对方"}版本`, ["checkout", `--${side}`, "--", path]).then(
-      ok => ok && run("标记已解决", ["add", "--", path]),
+    run(side === "ours" ? t("采用我方版本") : t("采用对方版本"), ["checkout", `--${side}`, "--", path]).then(
+      ok => ok && run(t("标记已解决"), ["add", "--", path]),
     );
 
   const commit = async (andPush: boolean) => {
     const msg = message.trim();
     if (!msg) return;
-    const ok = await run(isAmend ? "修改上次提交" : "提交", ["commit", "-F", "-", ...(isAmend ? ["--amend"] : [])], { stdin: msg + "\n" });
+    const ok = await run(isAmend ? t("修改上次提交") : t("提交"), ["commit", "-F", "-", ...(isAmend ? ["--amend"] : [])], {
+      stdin: msg + "\n",
+    });
     if (!ok) return;
     setMessage("");
     setIsAmend(false);
     if (andPush) {
       const branch = refs.find(r => r.kind === "local" && r.name === head.branch);
       const args = branch?.upstream ? ["push", ...(isAmend ? ["--force-with-lease"] : [])] : ["push", "-u", "origin", "HEAD"];
-      await run("推送", args);
+      await run(t("推送"), args);
     }
   };
 
@@ -96,10 +107,10 @@ export function ChangesView() {
     Boolean(message.trim()) && !busy && status.conflicts.length === 0 && (status.staged.length > 0 || isAmend || head.state === "merging");
 
   const stateLabel: Record<string, string> = {
-    merging: "合并",
-    rebasing: "变基",
-    "cherry-picking": "拣选",
-    reverting: "还原提交",
+    merging: t("合并"),
+    rebasing: t("变基"),
+    "cherry-picking": t("拣选"),
+    reverting: t("还原提交"),
   };
   const stateCmd: Record<string, string> = {
     merging: "merge",
@@ -116,38 +127,42 @@ export function ChangesView() {
         {head.state && (
           <div className="state-banner">
             <div>
-              正在{stateLabel[head.state]}
-              {status.conflicts.length > 0 ? `，还有 ${status.conflicts.length} 个冲突文件` : "，冲突已解决"}
+              {status.conflicts.length > 0
+                ? t("正在{op}，还有 {n} 个冲突文件", { op: stateLabel[head.state] ?? "", n: status.conflicts.length })
+                : t("正在{op}，冲突已解决", { op: stateLabel[head.state] ?? "" })}
             </div>
             <div className="state-actions">
               <button
                 className="btn small primary"
                 disabled={status.conflicts.length > 0 || Boolean(busy)}
-                onClick={() => void run(`继续${stateLabel[head.state!]}`, [stateCmd[head.state!]!, "--continue"])}
+                onClick={() =>
+                  void run(t("继续{op}", { op: stateLabel[head.state!] ?? "" }), [stateCmd[head.state!]!, "--continue"])
+                }
               >
-                继续
+                {t("继续")}
               </button>
               <button
                 className="btn small"
                 disabled={Boolean(busy)}
                 onClick={async () => {
+                  const op = stateLabel[head.state!] ?? "";
                   const ok = await dialogs.confirm({
-                    title: `中止${stateLabel[head.state!]}`,
-                    message: "回到开始之前的状态，已解决的冲突会丢失。",
-                    confirmLabel: "中止",
+                    title: t("中止{op}", { op }),
+                    message: t("回到开始之前的状态，已解决的冲突会丢失。"),
+                    confirmLabel: t("中止"),
                     isDanger: true,
                   });
-                  if (ok) await run(`中止${stateLabel[head.state!]}`, [stateCmd[head.state!]!, "--abort"]);
+                  if (ok) await run(t("中止{op}", { op }), [stateCmd[head.state!]!, "--abort"]);
                 }}
               >
-                中止
+                {t("中止")}
               </button>
             </div>
           </div>
         )}
         <div className="change-lists">
           {status.conflicts.length > 0 && (
-            <ChangeGroup title="冲突" count={status.conflicts.length}>
+            <ChangeGroup title={t("冲突")} count={status.conflicts.length}>
               {status.conflicts.map(f => (
                 <FileRow
                   key={`c:${f.path}`}
@@ -156,13 +171,17 @@ export function ChangesView() {
                   isSelected={isPicked(f, "conflict")}
                   onSelect={() => setPicked({ file: f, area: "conflict" })}
                   menuExtra={[
-                    { label: "采用我方版本", onSelect: () => void resolveWith(f.path, "ours") },
-                    { label: "采用对方版本", onSelect: () => void resolveWith(f.path, "theirs") },
-                    { label: "标记已解决", onSelect: () => void stage([f.path]) },
+                    { label: t("采用我方版本"), onSelect: () => void resolveWith(f.path, "ours") },
+                    { label: t("采用对方版本"), onSelect: () => void resolveWith(f.path, "theirs") },
+                    { label: t("标记已解决"), onSelect: () => void stage([f.path]) },
                   ]}
                   trailing={
-                    <button className="mini" title="解决完冲突后标记为已解决" onClick={e => (e.stopPropagation(), void stage([f.path]))}>
-                      已解决
+                    <button
+                      className="mini"
+                      title={t("解决完冲突后标记为已解决")}
+                      onClick={e => (e.stopPropagation(), void stage([f.path]))}
+                    >
+                      {t("已解决")}
                     </button>
                   }
                 />
@@ -170,12 +189,12 @@ export function ChangesView() {
             </ChangeGroup>
           )}
           <ChangeGroup
-            title="已暂存"
+            title={t("已暂存")}
             count={status.staged.length}
             action={
               status.staged.length > 0 && (
                 <button className="mini" onClick={() => void unstage(status.staged.map(f => f.path))}>
-                  全部取消
+                  {t("全部取消")}
                 </button>
               )
             }
@@ -187,9 +206,9 @@ export function ChangesView() {
                 file={f}
                 isSelected={isPicked(f, "staged")}
                 onSelect={() => setPicked({ file: f, area: "staged" })}
-                menuExtra={[{ label: "取消暂存", onSelect: () => void unstage([f.path]) }]}
+                menuExtra={[{ label: t("取消暂存"), onSelect: () => void unstage([f.path]) }]}
                 trailing={
-                  <button className="mini" title="取消暂存" onClick={e => (e.stopPropagation(), void unstage([f.path]))}>
+                  <button className="mini" title={t("取消暂存")} onClick={e => (e.stopPropagation(), void unstage([f.path]))}>
                     −
                   </button>
                 }
@@ -197,16 +216,16 @@ export function ChangesView() {
             ))}
           </ChangeGroup>
           <ChangeGroup
-            title="未暂存"
+            title={t("未暂存")}
             count={status.unstaged.length}
             action={
               status.unstaged.length > 0 && (
                 <>
                   <button className="mini" onClick={() => void discard(status.unstaged)}>
-                    全部还原
+                    {t("全部还原")}
                   </button>
                   <button className="mini" onClick={() => void stage(status.unstaged.map(f => f.path))}>
-                    全部暂存
+                    {t("全部暂存")}
                   </button>
                 </>
               )
@@ -220,11 +239,11 @@ export function ChangesView() {
                 isSelected={isPicked(f, "unstaged")}
                 onSelect={() => setPicked({ file: f, area: "unstaged" })}
                 menuExtra={[
-                  { label: "暂存", onSelect: () => void stage([f.path]) },
-                  { label: f.status === "?" ? "删除文件…" : "还原改动…", onSelect: () => void discard([f]), isDanger: true },
+                  { label: t("暂存"), onSelect: () => void stage([f.path]) },
+                  { label: f.status === "?" ? t("删除文件…") : t("还原改动…"), onSelect: () => void discard([f]), isDanger: true },
                 ]}
                 trailing={
-                  <button className="mini" title="暂存" onClick={e => (e.stopPropagation(), void stage([f.path]))}>
+                  <button className="mini" title={t("暂存")} onClick={e => (e.stopPropagation(), void stage([f.path]))}>
                     +
                   </button>
                 }
@@ -232,13 +251,13 @@ export function ChangesView() {
             ))}
           </ChangeGroup>
           {status.staged.length + status.unstaged.length + status.conflicts.length === 0 && (
-            <div className="empty">工作区干净，没有改动</div>
+            <div className="empty">{t("工作区干净，没有改动")}</div>
           )}
         </div>
         <div className="commit-box">
           <textarea
             className="input commit-message"
-            placeholder={`提交信息（提交到 ${head.branch || "游离 HEAD"}）`}
+            placeholder={t("提交信息（提交到 {branch}）", { branch: head.branch || t("游离 HEAD") })}
             value={message}
             onChange={e => setMessage(e.target.value)}
             onKeyDown={e => {
@@ -249,14 +268,14 @@ export function ChangesView() {
           <div className="commit-actions">
             <label className="checkbox">
               <input type="checkbox" checked={isAmend} disabled={!head.sha} onChange={e => void toggleAmend(e.target.checked)} />
-              修改上次提交
+              {t("修改上次提交")}
             </label>
             <span className="spacer" />
             <button className="btn" disabled={!canCommit} onClick={() => void commit(true)}>
-              提交并推送
+              {t("提交并推送")}
             </button>
             <button className="btn primary" disabled={!canCommit} onClick={() => void commit(false)} title="⌘↩">
-              提交
+              {t("提交")}
             </button>
           </div>
         </div>
@@ -268,10 +287,10 @@ export function ChangesView() {
             file={picked.file}
             text={diff}
             error={diffError}
-            title={picked.area === "staged" ? "已暂存的改动" : picked.area === "conflict" ? "冲突" : "未暂存的改动"}
+            title={picked.area === "staged" ? t("已暂存的改动") : picked.area === "conflict" ? t("冲突") : t("未暂存的改动")}
           />
         ) : (
-          <div className="empty">选择一个文件查看改动</div>
+          <div className="empty">{t("选择一个文件查看改动")}</div>
         )}
       </div>
     </div>

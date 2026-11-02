@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { formatDate } from "../lib/format";
 import { layoutGraph } from "../lib/graph";
 import type { GraphRow } from "../lib/graph";
+import { t } from "../lib/i18n";
 import { loadLog } from "../lib/repo";
 import type { Commit } from "../lib/repo";
 import { useRepo } from "../state/repo-context";
@@ -126,30 +127,30 @@ export function LogView({
       <div className="log-toolbar">
         <label className="search">
           <IconSearch />
-          <input value={text} placeholder="提交信息或哈希" onChange={e => setText(e.target.value)} spellCheck={false} />
+          <input value={text} placeholder={t("提交信息或哈希")} onChange={e => setText(e.target.value)} spellCheck={false} />
         </label>
         <input
           className="input small"
           value={author}
-          placeholder="作者"
+          placeholder={t("作者")}
           onChange={e => setAuthor(e.target.value)}
           spellCheck={false}
         />
         <span className="scope-chip">
-          分支：{scope.label}
+          {t("分支：{name}", { name: scope.label })}
           {scope.revs.length > 0 && (
-            <button className="chip-clear" title="显示全部分支" onClick={onClearScope}>
+            <button className="chip-clear" title={t("显示全部分支")} onClick={onClearScope}>
               ×
             </button>
           )}
         </span>
         <span className="muted log-count">
-          {isLoading ? "加载中…" : `${commits.length}${isDone ? "" : "+"} 个提交`}
+          {isLoading ? t("加载中…") : t("{n} 个提交", { n: `${commits.length}${isDone ? "" : "+"}` })}
         </span>
       </div>
       {banner}
       <div className="log-scroll" ref={scroller} tabIndex={0} onKeyDown={onKeyDown} onScroll={e => setScrollTop(e.currentTarget.scrollTop)}>
-        {commits.length === 0 && !isLoading && <div className="empty">没有符合条件的提交</div>}
+        {commits.length === 0 && !isLoading && <div className="empty">{t("没有符合条件的提交")}</div>}
         <div style={{ height: commits.length * ROW_H, position: "relative" }}>
           {commits.slice(first, last).map((c, k) => {
             const i = first + k;

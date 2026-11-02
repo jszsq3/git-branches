@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from "react";
 
 import { GitError, runGit } from "../lib/git";
+import { t } from "../lib/i18n";
 import { loadHead, loadRefs, loadStatus, remotes as loadRemotes } from "../lib/repo";
 import type { Head, Ref, Status } from "../lib/repo";
 import { favorites as readFavorites, setFavorites } from "../lib/storage";
@@ -11,6 +12,8 @@ export type OpOptions = {
   /** 失败时不弹窗，由调用方处理 */
   quiet?: boolean;
   stdin?: string;
+  /** 失败时附在 git 报错后面的说明 */
+  hint?: string;
 };
 
 type RepoValue = {
@@ -68,7 +71,7 @@ export function RepoProvider({
       setRemotes(rm);
       setVersion(v => v + 1);
     } catch (error) {
-      void dialogs.alert("读取仓库失败", String(error instanceof Error ? error.message : error));
+      void dialogs.alert(t("读取仓库失败"), String(error instanceof Error ? error.message : error));
     } finally {
       loading.current = false;
     }
@@ -107,13 +110,14 @@ export function RepoProvider({
         const out = await runGit(root, args, options.stdin);
         if (out.code !== 0) {
           if (!options.quiet) {
-            await dialogs.alert(`${label}失败`, new GitError(args, out).message);
+            const message = new GitError(args, out).message;
+            await dialogs.alert(t("{label}失败", { label }), options.hint ? `${message}\n\n${options.hint}` : message);
           }
           return false;
         }
         return true;
       } catch (error) {
-        if (!options.quiet) await dialogs.alert(`${label}失败`, String(error));
+        if (!options.quiet) await dialogs.alert(t("{label}失败", { label }), String(error));
         return false;
       } finally {
         setBusy("");
