@@ -10,6 +10,7 @@ import { RepoProvider } from "./state/repo-context";
 import type { RepoSummary } from "./state/repo-context";
 import { IconFolder } from "./components/icons";
 import { TabBar, tabLabels } from "./components/TabBar";
+import { useUpdater } from "./components/UpdateBanner";
 import { Workspace } from "./components/Workspace";
 import "./styles.css";
 
@@ -25,6 +26,7 @@ function Shell() {
   const dialogs = useDialogs();
   // 订阅语言：切换时整棵界面重绘
   const locale = useLocale();
+  const updater = useUpdater();
   const [recent, setRecent] = useState<string[]>(recentRepos);
   const [tabs, setTabs] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -166,7 +168,11 @@ function Shell() {
         }}
         onMove={moveTab}
         onAdd={() => void pickFolder()}
+        version={updater.version}
+        isCheckingUpdate={updater.isChecking}
+        onCheckUpdate={updater.checkNow}
       />
+      {updater.banner}
       <div className="shell-body">
         {isRestored && tabs.length === 0 && (
           <Welcome

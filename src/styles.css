@@ -1310,6 +1310,61 @@ textarea {
   font-size: 12px;
   white-space: nowrap;
 }
+.version-btn {
+  align-self: center;
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--faint);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+}
+.version-btn:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+.update-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 6px 10px 6px 14px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.update-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+}
+.update-title {
+  font-weight: 600;
+  flex: none;
+}
+.update-notes {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+}
+.update-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.update-close {
+  visibility: visible;
+  margin-left: 2px;
+}
 .lang-switch {
   align-self: center;
   display: inline-flex;

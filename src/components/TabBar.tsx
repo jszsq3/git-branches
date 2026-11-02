@@ -26,6 +26,9 @@ export function TabBar({
   onCloseOthers,
   onMove,
   onAdd,
+  version,
+  isCheckingUpdate,
+  onCheckUpdate,
 }: {
   tabs: string[];
   active: string | null;
@@ -35,6 +38,9 @@ export function TabBar({
   onCloseOthers: (root: string) => void;
   onMove: (from: number, to: number) => void;
   onAdd: () => void;
+  version: string;
+  isCheckingUpdate: boolean;
+  onCheckUpdate: () => void;
 }) {
   const dialogs = useDialogs();
   const locale = useLocale();
@@ -105,6 +111,11 @@ export function TabBar({
       <span className="ws-count" data-tauri-drag-region>
         {t("{n} 个工作区", { n: tabs.length })}
       </span>
+      {version && (
+        <button className="version-btn" title={t("检查更新")} disabled={isCheckingUpdate} onClick={onCheckUpdate}>
+          {isCheckingUpdate ? t("检查中…") : `v${version}`}
+        </button>
+      )}
       <div className="lang-switch" role="group" aria-label={t("界面语言")}>
         {LOCALES.map(l => (
           <button key={l.value} className={`lang-btn${locale === l.value ? " on" : ""}`} onClick={() => setLocale(l.value)}>

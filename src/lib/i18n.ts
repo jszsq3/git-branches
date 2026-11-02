@@ -292,6 +292,22 @@ const EN: Record<string, string> = {
   "删除标签…": "Delete Tag…",
   "删除…": "Delete…",
 
+  // 检查更新
+  检查更新: "Check for updates",
+  "检查中…": "Checking…",
+  已是最新版本: "You're up to date",
+  "当前版本 {version} 已是最新。": "Version {version} is the latest.",
+  检查更新失败: "Update check failed",
+  "更新服务返回异常（{status}）": "The update service returned an error ({status})",
+  "发现新版本 {latest}（当前 {current}）": "Version {latest} is available (current {current})",
+  跳过此版本: "Skip This Version",
+  "下载更新（{size}）": "Download Update ({size})",
+  "下载中…": "Downloading…",
+  下载失败: "Download failed",
+  "新版本已下载并打开，把 GitBranches 拖到“应用程序”替换旧版本，然后重新打开应用。":
+    "The new version is downloaded and opened. Drag GitBranches into Applications to replace the old one, then reopen the app.",
+  再次打开安装包: "Open Installer Again",
+
   // 弹窗
   知道了: "OK",
   取消: "Cancel",
