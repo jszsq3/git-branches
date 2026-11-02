@@ -10,7 +10,7 @@ import { RepoProvider } from "./state/repo-context";
 import type { RepoSummary } from "./state/repo-context";
 import { IconFolder } from "./components/icons";
 import { TabBar, tabLabels } from "./components/TabBar";
-import { useUpdater } from "./components/UpdateBanner";
+import { useUpdater } from "./components/UpdateDialog";
 import { Workspace } from "./components/Workspace";
 import "./styles.css";
 
@@ -170,9 +170,10 @@ function Shell() {
         onAdd={() => void pickFolder()}
         version={updater.version}
         isCheckingUpdate={updater.isChecking}
+        pendingVersion={updater.pendingVersion}
         onCheckUpdate={updater.checkNow}
       />
-      {updater.banner}
+      {updater.dialog}
       <div className="shell-body">
         {isRestored && tabs.length === 0 && (
           <Welcome

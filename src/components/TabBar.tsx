@@ -28,6 +28,7 @@ export function TabBar({
   onAdd,
   version,
   isCheckingUpdate,
+  pendingVersion,
   onCheckUpdate,
 }: {
   tabs: string[];
@@ -40,6 +41,8 @@ export function TabBar({
   onAdd: () => void;
   version: string;
   isCheckingUpdate: boolean;
+  /** 有新版本且没被跳过时的版本号 */
+  pendingVersion: string | null;
   onCheckUpdate: () => void;
 }) {
   const dialogs = useDialogs();
@@ -112,8 +115,14 @@ export function TabBar({
         {t("{n} 个工作区", { n: tabs.length })}
       </span>
       {version && (
-        <button className="version-btn" title={t("检查更新")} disabled={isCheckingUpdate} onClick={onCheckUpdate}>
+        <button
+          className={`version-btn${pendingVersion ? " has-update" : ""}`}
+          title={pendingVersion ? t("新版本 {version} 可用，点击查看", { version: pendingVersion }) : t("检查更新")}
+          disabled={isCheckingUpdate}
+          onClick={onCheckUpdate}
+        >
           {isCheckingUpdate ? t("检查中…") : `v${version}`}
+          {pendingVersion && !isCheckingUpdate && <span className="update-dot" />}
         </button>
       )}
       <div className="lang-switch" role="group" aria-label={t("界面语言")}>

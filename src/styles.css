@@ -1327,43 +1327,91 @@ textarea {
   background: var(--hover);
   color: var(--text);
 }
-.update-bar {
+.version-btn.has-update {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+}
+.update-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* 更新弹窗 */
+.btn.ghost {
+  border-color: transparent;
+  background: none;
+  color: var(--muted);
+  padding: 0 8px;
+}
+.btn.ghost:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+.update-modal {
+  width: min(480px, 100%);
+  padding: 24px;
+}
+.update-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 40px;
-  padding: 6px 10px 6px 14px;
-  background: var(--accent-soft);
-  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+.update-icon {
   flex: none;
+  filter: drop-shadow(0 6px 12px rgba(53, 116, 240, 0.3));
 }
-.update-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  white-space: nowrap;
-}
-.update-title {
+.update-heading {
+  margin: 0;
+  font-size: 17px;
   font-weight: 600;
-  flex: none;
 }
-.update-notes {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.update-sub {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.update-notes-box {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+.update-notes-title {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--muted);
 }
-.update-actions {
+.update-notes-body {
+  margin: 0;
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font: inherit;
+  line-height: 1.6;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.update-notes-empty {
+  margin: 0;
+  color: var(--muted);
+}
+.update-steps {
+  margin: 18px 0 0;
+  padding: 12px 14px 12px 32px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  line-height: 1.9;
+}
+.update-footer {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex: none;
-}
-.update-close {
-  visibility: visible;
-  margin-left: 2px;
+  gap: 8px;
+  margin-top: 20px;
 }
 .lang-switch {
   align-self: center;
