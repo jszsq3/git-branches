@@ -3,6 +3,7 @@ name = "git-branches"
 version = "0.1.5"
 description = "轻量的 Git 分支管理桌面应用"
 authors = ["zangshaoqi"]
+license = "MIT"
 edition = "2021"
 rust-version = "1.88"
 
