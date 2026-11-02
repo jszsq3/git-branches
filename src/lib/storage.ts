@@ -29,6 +29,17 @@ export function forgetRepo(root: string) {
   writeJson("recent", recentRepos().filter(r => r !== root));
 }
 
+export type OpenTabs = { tabs: string[]; active: string | null };
+
+export function openTabs(): OpenTabs {
+  const saved = readJson<OpenTabs>("open-tabs", { tabs: [], active: null });
+  return Array.isArray(saved.tabs) ? saved : { tabs: [], active: null };
+}
+
+export function saveOpenTabs(value: OpenTabs) {
+  writeJson("open-tabs", value);
+}
+
 export function favorites(root: string): string[] {
   return readJson<string[]>(`favs:${root}`, []);
 }

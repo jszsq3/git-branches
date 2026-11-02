@@ -9,8 +9,9 @@ import { useRepo } from "../state/repo-context";
 import { IconSearch } from "./icons";
 
 const ROW_H = 26;
-const LANE_W = 14;
-const MAX_LANES = 24;
+const LANE_W = 12;
+// 分支很多的仓库泳道会很宽，超出部分不画，给提交信息留位置
+const MAX_LANES = 12;
 const PAGE = 800;
 const PALETTE = 8;
 

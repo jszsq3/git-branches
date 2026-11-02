@@ -33,7 +33,20 @@ const RepoContext = createContext<RepoValue | null>(null);
 
 const EMPTY_STATUS: Status = { staged: [], unstaged: [], conflicts: [] };
 
-export function RepoProvider({ root, children }: { root: string; children: ReactNode }) {
+/** 标签栏展示的仓库概况 */
+export type RepoSummary = { branch: string; changes: number; isBusy: boolean; hasState: boolean };
+
+export function RepoProvider({
+  root,
+  isActive,
+  onSummary,
+  children,
+}: {
+  root: string;
+  isActive: boolean;
+  onSummary: (root: string, summary: RepoSummary) => void;
+  children: ReactNode;
+}) {
   const dialogs = useDialogs();
   const [refs, setRefs] = useState<Ref[]>([]);
   const [head, setHead] = useState<Head>({ branch: "", sha: "", state: null });
@@ -66,12 +79,26 @@ export function RepoProvider({ root, children }: { root: string; children: React
     void reload();
   }, [root, reload]);
 
-  // 切回窗口时刷新，外部终端或编辑器的改动随之可见
+  // 切到这个标签、或切回窗口时刷新当前标签，外部终端或编辑器的改动随之可见
+  const wasActive = useRef(isActive);
   useEffect(() => {
+    if (isActive && !wasActive.current) void reload();
+    wasActive.current = isActive;
+    if (!isActive) return;
     const onFocus = () => void reload();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [reload]);
+  }, [isActive, reload]);
+
+  const changes = status.staged.length + status.unstaged.length + status.conflicts.length;
+  useEffect(() => {
+    onSummary(root, {
+      branch: head.branch || (head.sha ? head.sha.slice(0, 8) : ""),
+      changes,
+      isBusy: Boolean(busy),
+      hasState: Boolean(head.state),
+    });
+  }, [root, head.branch, head.sha, head.state, changes, busy, onSummary]);
 
   const run = useCallback(
     async (label: string, args: string[], options: OpOptions = {}) => {

@@ -2,6 +2,7 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 use serde::Serialize;
+use tauri::menu::{MenuBuilder, SubmenuBuilder};
 
 #[derive(Serialize)]
 struct GitOutput {
@@ -64,6 +65,29 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        // 默认菜单的“关闭窗口”占用 ⌘W；这里不放它，⌘W 交给页面关闭当前工作区标签
+        .menu(|app| {
+            let app_menu = SubmenuBuilder::new(app, "GitBranches")
+                .about(None)
+                .separator()
+                .hide()
+                .hide_others()
+                .show_all()
+                .separator()
+                .quit()
+                .build()?;
+            let edit = SubmenuBuilder::new(app, "编辑")
+                .undo()
+                .redo()
+                .separator()
+                .cut()
+                .copy()
+                .paste()
+                .select_all()
+                .build()?;
+            let window = SubmenuBuilder::new(app, "窗口").minimize().maximize().fullscreen().build()?;
+            MenuBuilder::new(app).items(&[&app_menu, &edit, &window]).build()
+        })
         .invoke_handler(tauri::generate_handler![git, path_exists])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
