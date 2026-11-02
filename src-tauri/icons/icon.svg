@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- 应用图标源文件：按 macOS 图标网格，824 见方的圆角底板居中，四周留透明边 -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#3574F0"/>
+  <path d="M400 364 L400 660" stroke="#FFFFFF" stroke-width="56" stroke-linecap="round" fill="none"/>
+  <path d="M624 364 C624 540 400 500 400 620" stroke="#FFFFFF" stroke-width="56" stroke-linecap="round" fill="none"/>
+  <circle cx="400" cy="300" r="64" fill="#3574F0" stroke="#FFFFFF" stroke-width="52"/>
+  <circle cx="624" cy="300" r="64" fill="#3574F0" stroke="#FFFFFF" stroke-width="52"/>
+  <circle cx="400" cy="724" r="64" fill="#3574F0" stroke="#FFFFFF" stroke-width="52"/>
+</svg>
